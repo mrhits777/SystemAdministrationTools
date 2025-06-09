@@ -119,7 +119,11 @@ zombie_procs="$(ps aux | awk '$8 == "Z"')"
 output_csv_row "Zombie Processes" "Details" "${zombie_procs:-No zombie processes found}"
 
 run_check "15/40" "Open Ports"
-ports="$(ss -tuln)"
+if command -v ss &>/dev/null; then
+    ports="$(ss -tuln)"
+else
+    ports="$(netstat -tuln 2>/dev/null)"
+fi
 output_csv_row "Open Ports" "Details" "${ports:-No open ports found}"
 
 run_check "16/40" "Disk I/O"
@@ -127,7 +131,13 @@ disk_io="$(iostat -dx 2>/dev/null | head -n 20)"
 output_csv_row "Disk I/O" "Details" "${disk_io:-No iostat info found}"
 
 run_check "17/40" "Network Stats"
-net_stats="$(ifconfig 2>/dev/null | sed 's/\s\+/ /g')"
+if command -v ifconfig &>/dev/null; then
+    net_stats="$(ifconfig 2>/dev/null | sed 's/\s\+/ /g')"
+elif command -v ip &>/dev/null; then
+    net_stats="$(ip -o addr show 2>/dev/null | sed 's/\s\+/ /g')"
+else
+    net_stats=""
+fi
 output_csv_row "Network Stats" "Details" "${net_stats:-No network interface found}"
 
 run_check "18/40" "Top 10 CPU-consuming Processes"
